@@ -9,14 +9,11 @@ module block_controller(
     output reg [11:0] background
 
     localparam
-    INI =8'b00000001;
-    MENU = 8'b00000010;
-    STACK = 8'b00000100;
-    CHECK = 8'b00001000;
-    WAIT  = 8'b00010000;
-    SUCCESS = 8'b00100000;
-    FAIL = 8'b0100000;
-    DONE = 8'b10000000;
+        START = 5'b00000;
+        STACK = 5'b00010;
+        UPDATE = 5'b00100;
+        CHECK = 5'b01000;
+        TEMP = 5'b10000;
     );
 
     wire block_fill;
@@ -26,10 +23,13 @@ module block_controller(
     reg [9:0] xprevL, xprevR;
     reg [1:0] first;
     reg [7:0] state;
+    reg [11:0] difference;
+    reg [9:0] stack [0:9][0:1]; // 10-bit wide, 10 row 2 col 2-d array to store previous blocks
 
     parameter BLACK = 12'b0000_0000_0000;
     parameter RED   = 12'b1111_0000_0000;
     parameter WHITE = 12'b1111_1111_1111;
+    parameter max_count = ; // fill in later after calculating desired wait time
 
     always@ (*) begin
         // figure out block
@@ -42,16 +42,30 @@ module block_controller(
     begin
         if (rst)
         begin
-            xposL <= 144; // correct values ???
-            xposR <= 144 + (12 * block_count);
-            ypos <= ; // ???
+            xposL <= 144; // left edge of sprite
+            xposR <= 184; // right edge of sprite todo
+            ypos <= 514; // bottom of screen
             right = 1'b1;
             first = 1'b1;
+            state <= START;
         end
         else if (clk) begin
             case(state)
-                INI:
-                MENU:
+                START:
+                    xposL <= 144; // left edge of sprite
+                    xposR <= 184; // right edge of sprite todo
+                    ypos <= 514; // bottom of screen
+                    right = 1'b1;
+                    first = 1'b1;
+                    state <= START;
+                    for (int i = 0; i < 10; i++) begin
+                        for (int j = 0; j < 2; j++) begin
+                            stack[i][j] = 0;
+                        end
+                    end
+                    if (BTNC) begin 
+                        state <= STACK;
+                    end
                 STACK:
                     begin
                     if (BTNC) begin
@@ -67,7 +81,7 @@ module block_controller(
                     if (right == 1'b1) begin
                         xposL <= xposL + 10;// changed to 8 ???
                         xposR <= xposR + 10;
-                        if (xposR >= 800)
+                        if (xposR >= 790)
                             right <= 1'b0;
                             xposR <= xposR - 10;
                             xposL <= xposL - 10;
@@ -75,23 +89,41 @@ module block_controller(
                     else if (right == 1'b0) begin
                         xposL <= xposL - 10;
                         xposR <= xposR - 10;
-                        if (xposL >= 150)
+                        if (xposL <= 154)
                             right <= 1'b1;
                             xposR <= xposR + 10;
                             xposL <= xposL + 10;
                     end
                     end
-                CHECK:
+                UPDATE:
                     // check boundary
-                        if(xposL<xprevL){
-                            //This means we overextended on the left side
-                            xposL
-                        }
-                    // 
-                WAIT:
-                SUCCESS:
-                FAIL:
-                DONE:
+                    if (xposL >= xprevR || xposR <= xprevL) begin
+                        state <= FAIL;
+                        block_count = 0;
+                    end
+                    else if (xposL > xprevL) begin
+                        xposR <= xprevR;
+                    end
+                    else begin // xposL <= xprev
+                        xposL <= xprevL;
+                    end
+                CHECK:
+                    difference = xposR - xposL;
+                    if (difference < 10) begin
+                        state <= START;
+                    end
+                    else begin
+                        xprevL <= xposL;
+                        xprevR <= xposR;
+                        ypos <= ypos + 10;
+                        xposL <= 144;
+                        xposR <= 144 + difference;
+                        state <= STACK;
+                        right <= 1'b1; // not sure
+
+                    end
+                TEMP:
+
             endcase
         end
     end
