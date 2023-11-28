@@ -4,9 +4,9 @@ module block_controller(
     input clk, //this clock must be a slow enough clock to view the changing positions of the objects
     input rst,
     input BTNC,
-    input [9:0] hCount, vCount,
+    input bright,
+    input [9:0] hCount, vCount, // horizontal count, vertical count
     output reg [11:0] rgb,
-    output reg [11:0] background
 
     localparam
         START = 5'b00000;
@@ -23,20 +23,43 @@ module block_controller(
     reg [9:0] xprevL, xprevR;
     reg [1:0] first;
     reg [7:0] state;
+    reg [4:0] height;
     reg [11:0] difference;
     reg [9:0] stack [0:9][0:1]; // 10-bit wide, 10 row 2 col 2-d array to store previous blocks
 
     parameter BLACK = 12'b0000_0000_0000;
     parameter RED   = 12'b1111_0000_0000;
     parameter WHITE = 12'b1111_1111_1111;
-    parameter max_count = ; // fill in later after calculating desired wait time
 
     always@ (*) begin
         // figure out block
         // set background back ???
+        if(~bright)
+            rgb = BLACK;
+        else if (hCount >= stack[0][0] && hCount <= stack[0][1] && vCount <= 514 && vCount > 504) // check if in any blocks
+            rgb = RED;
+        else if (hCount >= stack[1][0] && hCount <= stack[1][1] && vCount <= 504 && vCount > 494) 
+            rgb = RED;
+        else if (hCount >= stack[2][0] && hCount <= stack[2][1] && vCount <= 494 && vCount > 484)
+            rgb = RED;
+        else if (hCount >= stack[3][0] && hCount <= stack[3][1] && vCount <= 484 && vCount > 474)
+            rgb = RED;
+        else if (hCount >= stack[4][0] && hCount <= stack[4][1] && vCount <= 474 && vCount > 464)
+            rgb = RED;
+        else if (hCount >= stack[5][0] && hCount <= stack[5][1] && vCount <= 464 && vCount > 454)
+            rgb = RED;
+        else if (hCount >= stack[6][0] && hCount <= stack[6][1] && vCount <= 454 && vCount > 444)
+            rgb = RED;
+        else if (hCount >= stack[7][0] && hCount <= stack[7][1] && vCount <= 444 && vCount > 434)
+            rgb = RED;
+        else if (hCount >= stack[8][0] && hCount <= stack[8][1] && vCount <= 434 && vCount > 424)
+            rgb = RED;
+        else if (hCount >= stack[9][0] && hCount <= stack[9][1] && vCount <= 424 && vCount > 414)
+            rgb = RED;
+        else
+            rgb = WHITE;
     end
 
-    assign block_fill=vCount>=(ypos-5) && vCount<=(ypos+5) && hCount>=(xpos-5) && hCount<=(xpos+5);
 
     always@(posedge clk, posedge rst)
     begin
@@ -45,8 +68,10 @@ module block_controller(
             xposL <= 144; // left edge of sprite
             xposR <= 184; // right edge of sprite todo
             ypos <= 514; // bottom of screen
-            right = 1'b1;
-            first = 1'b1;
+            right <= 1'b1;
+            first <= 1'b1;
+            height <= 0;
+            difference <= 0;
             state <= START;
         end
         else if (clk) begin
@@ -57,7 +82,10 @@ module block_controller(
                     ypos <= 514; // bottom of screen
                     right = 1'b1;
                     first = 1'b1;
+                    height <= 0;
+                    difference <= 0;
                     state <= START;
+                    // correct way to initliaze array?
                     for (int i = 0; i < 10; i++) begin
                         for (int j = 0; j < 2; j++) begin
                             stack[i][j] = 0;
@@ -109,7 +137,8 @@ module block_controller(
                     end
                 CHECK:
                     difference = xposR - xposL;
-                    if (difference < 10) begin
+
+                    if (difference < 10 || height == 9) begin
                         state <= START;
                     end
                     else begin
@@ -120,7 +149,9 @@ module block_controller(
                         xposR <= 144 + difference;
                         state <= STACK;
                         right <= 1'b1; // not sure
-
+                        stack[height][0] <= xposL;
+                        stack[height][1] <= xposR;
+                        height <= height + 1;
                     end
                 TEMP:
 
