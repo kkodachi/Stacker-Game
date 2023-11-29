@@ -9,16 +9,18 @@ module block_controller(
     output reg [11:0] rgb
     );
 	localparam
-        START = 4'b0001,
-        STACK = 4'b0010,
-        UPDATE = 4'b0100,
-        CHECK = 4'b1000;
+        START = 5'b00001,
+        STACK = 5'b00010,
+        UPDATE = 5'b00100,
+        CHECK = 5'b01000,
+        DEBOUNCE = 5'b10000;
 
     wire block_fill;
     reg [1:0] left;
     reg [9:0] xposL, xposR, ypos; // values to dictate center of block
     reg [9:0] xprevL, xprevR;
     reg [1:0] first;
+	reg [1:0] second;
     reg [7:0] state;
     reg [4:0] height;
     reg [11:0] difference;
@@ -74,6 +76,7 @@ module block_controller(
             height <= 0;
             difference <= 0;
             state <= START;
+			second <= 0;
 			// clear screen 
         end
         else if (clk) begin
@@ -87,6 +90,8 @@ module block_controller(
                     first <= 1'b1;
                     height <= 0;
                     difference <= 0;
+					second <= 0;
+					
 					// clear screen
                     // correct way to initliaze array?
                     for (i = 0; i < 10; i=i+1)begin
@@ -95,7 +100,7 @@ module block_controller(
                         end
                     end
                     if (BTNC) begin 
-                        state <= STACK;
+                        state <= DEBOUNCE;
                     end
 				end
                 STACK:
@@ -112,28 +117,46 @@ module block_controller(
 							stack[height][0] <= xposL;
 							stack[height][1] <= xposR;
 							left <= 1'b1;
+							second <= 1'b1;
+							state <= DEBOUNCE;
                         end
                         else begin
-                            state <= UPDATE;
+                            state <= DEBOUNCE;
                         end
                     end
                     else if (left == 1'b1) begin
-                        xposL <= xposL - 2;// changed to 8 ???
-                        xposR <= xposR - 2;
+                        xposL <= xposL - 1;// changed to 8 ???
+                        xposR <= xposR - 1;
                         if (xposR >= 783)
                             left <= 1'b0;
-                            xposR <= xposR + 2;
-                            xposL <= xposL + 2;
+                            xposR <= xposR + 1;
+                            xposL <= xposL + 1;
                     end
                     else if (left == 1'b0) begin
-                        xposL <= xposL + 2;
-                        xposR <= xposR + 2;
+                        xposL <= xposL + 1;
+                        xposR <= xposR + 1;
                         if (xposL <= 144)
                             left <= 1'b1;
-                            xposR <= xposR - 2;
-                            xposL <= xposL - 2;
+                            xposR <= xposR - 1;
+                            xposL <= xposL - 1;
                     end
                     end
+                DEBOUNCE:
+                begin
+                    if(BTNC)
+                    begin
+                    end
+					else if(first)begin
+						state <= STACK;
+					end
+					else if(second)begin
+						second <= 0;
+						state <= STACK;
+					end
+                    else if(!BTNC)begin
+                        state <= UPDATE;
+                    end
+                end
                 UPDATE:
 				begin
                     // check boundary
