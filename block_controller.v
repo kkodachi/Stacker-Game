@@ -28,7 +28,7 @@ module block_controller(
     integer i, j;
 
     parameter BLACK     = 12'b0000_0000_0000;
-	parameter BLUE      = 12'b0000_1111_1111;
+    parameter BLUE      = 12'b0000_1111_1111;
     parameter RED       = 12'b1111_0000_0000;
     parameter WHITE     = 12'b1111_1111_1111;
 
@@ -106,15 +106,15 @@ module block_controller(
                             first <= 1'b0;
                             xprevL <= xposL;
                             xprevR <= xposR;
-							xposL <= 144;
-							xposR <= 244;
-							height <= height + 1;
-							ypos <= ypos - 50;
-							stack[height][0] <= xposL;
-							stack[height][1] <= xposR;
-							left <= 1'b1;
-							second <= 1'b1;
-							state <= DEBOUNCE;
+                            xposL <= 144;
+                            xposR <= 244;
+                            height <= height + 1;
+                            ypos <= ypos - 50;
+                            stack[height][0] <= xposL;
+                            stack[height][1] <= xposR;
+                            left <= 1'b1;
+                            second <= 1'b1;
+                            state <= DEBOUNCE;
                         end
                         else begin
                             state <= DEBOUNCE;
@@ -139,37 +139,36 @@ module block_controller(
                 end
                 DEBOUNCE:
                 begin
-                    if(BTNC)
-                    begin
+                    if(BTNC) begin
                     end
-					else if(first)begin
-						state <= STACK;
-					end
-					else if(second)begin
-						second <= 0;
-						state <= STACK;
-					end
+                    else if(first)begin
+                        state <= STACK;
+                    end
+                    else if(second)begin
+                        second <= 0;
+                        state <= STACK;
+                    end
                     else if(!BTNC)begin
                         state <= UPDATE;
                     end
                 end
                 UPDATE:
-				begin
+                begin
                     // check boundary
                     if (xposL >= xprevR || xposR <= xprevL) begin
                         state <= START;
                     end
                     else if (xposL > xprevL) begin
                         xposR <= xprevR;
-						state <= CHECK;
+                        state <= CHECK;
                     end
                     else begin // xposL <= xprev
                         xposL <= xprevL;
-						state <= CHECK;
+                        state <= CHECK;
                     end
-				end
+                end
                 CHECK:
-				begin
+                begin
                     difference = xposR - xposL;
                     if ((difference < 10) || (height == 9)) begin
                         state <= START;
@@ -186,7 +185,7 @@ module block_controller(
                         stack[height][1] <= xposR;
                         height <= height + 1;
                     end
-				end
+                end
             endcase
         end
     end
