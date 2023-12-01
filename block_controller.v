@@ -8,11 +8,11 @@ module block_controller(
     input [9:0] hCount, vCount, // horizontal count, vertical count
     output reg [11:0] rgb
     );
-	localparam
-        START = 5'b00001,
-        STACK = 5'b00010,
-        UPDATE = 5'b00100,
-        CHECK = 5'b01000,
+    localparam
+        START    = 5'b00001,
+        STACK    = 5'b00010,
+        UPDATE   = 5'b00100,
+        CHECK    = 5'b01000,
         DEBOUNCE = 5'b10000;
 
     wire block_fill;
@@ -20,25 +20,23 @@ module block_controller(
     reg [9:0] xposL, xposR, ypos; // values to dictate center of block
     reg [9:0] xprevL, xprevR;
     reg [1:0] first;
-	reg [1:0] second;
+    reg [1:0] second;
     reg [7:0] state;
     reg [4:0] height;
     reg [11:0] difference;
     reg [9:0] stack [0:9][0:1]; // 10-bit wide, 10 row 2 col 2-d array to store previous blocks
-	integer i, j;
+    integer i, j;
 
-    parameter BLACK = 12'b0000_0000_0000;
-	parameter BLUE = 12'b0000_1111_1111;
-    parameter RED   = 12'b1111_0000_0000;
-    parameter WHITE = 12'b1111_1111_1111;
+    parameter BLACK     = 12'b0000_0000_0000;
+	parameter BLUE      = 12'b0000_1111_1111;
+    parameter RED       = 12'b1111_0000_0000;
+    parameter WHITE     = 12'b1111_1111_1111;
 
     always@ (*) begin
-        // figure out block
-        // set background back ???
         if(~bright)
             rgb = BLACK;
-		else if (hCount >= xposL && hCount <= xposR && vCount <= ypos && vCount > ypos - 50)
-			rgb = RED;
+        else if (hCount >= xposL && hCount <= xposR && vCount <= ypos && vCount > ypos - 50)
+            rgb = RED;
         else if (hCount >= stack[0][0] && hCount <= stack[0][1] && vCount <= 514 && vCount > 464) // check if in any blocks
             rgb = RED;
         else if (hCount >= stack[1][0] && hCount <= stack[1][1] && vCount <= 464 && vCount > 414) 
@@ -76,13 +74,12 @@ module block_controller(
             height <= 0;
             difference <= 0;
             state <= START;
-			second <= 0;
-			// clear screen 
+            second <= 0;
         end
         else if (clk) begin
             case(state)
                 START:
-				begin
+                begin
                     xposL <= 144; // left edge of sprite
                     xposR <= 244; // right edge of sprite todo
                     ypos <= 514; // bottom of screen
@@ -90,21 +87,20 @@ module block_controller(
                     first <= 1'b1;
                     height <= 0;
                     difference <= 0;
-					second <= 0;
+                    second <= 0;
 					
-					// clear screen
-                    // correct way to initliaze array?
                     for (i = 0; i < 10; i=i+1)begin
                         for (j = 0; j < 2; j=j+1)begin
                             stack[i][j] = 0;
                         end
                     end
+
                     if (BTNC) begin 
                         state <= DEBOUNCE;
                     end
-				end
+                end
                 STACK:
-                    begin
+                begin
                     if (BTNC) begin
                         if (first == 1'b1) begin
                             first <= 1'b0;
@@ -125,7 +121,7 @@ module block_controller(
                         end
                     end
                     else if (left == 1'b1) begin
-                        xposL <= xposL - 1;// changed to 8 ???
+                        xposL <= xposL - 1;
                         xposR <= xposR - 1;
                         if (xposR >= 783)
                             left <= 1'b0;
@@ -140,7 +136,7 @@ module block_controller(
                             xposR <= xposR - 1;
                             xposL <= xposL - 1;
                     end
-                    end
+                end
                 DEBOUNCE:
                 begin
                     if(BTNC)
@@ -185,7 +181,7 @@ module block_controller(
                         xposL <= 144;
                         xposR <= 144 + difference;
                         state <= STACK;
-                        left <= 1'b1; // not sure
+                        left <= 1'b1;
                         stack[height][0] <= xposL;
                         stack[height][1] <= xposR;
                         height <= height + 1;
